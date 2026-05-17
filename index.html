@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nishchal Sreevathsa — Security Researcher & Purple Team Engineer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #05070F;
+    --bg-surface: #0A0D1A;
+    --bg-card: #0D1020;
+    --bg-card-hover: #111428;
+    --border: rgba(255,255,255,0.05);
+    --border-accent: rgba(255,255,255,0.08);
+    --green: #10B981;
+    --green-dim: rgba(16,185,129,0.12);
+    --green-glow: rgba(16,185,129,0.25);
+    --amber: #F59E0B;
+    --amber-dim: rgba(245,158,11,0.12);
+    --amber-glow: rgba(245,158,11,0.2);
+    --cyan: #06B6D4;
+    --cyan-dim: rgba(6,182,212,0.12);
+    --cyan-glow: rgba(6,182,212,0.2);
+    --red: #EF4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --text-primary: #E2E8F0;
+    --text-secondary: #94A3B8;
+    --text-muted: #475569;
+    --mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg-void); }
+  ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 2px; }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+  
+  /* Sidebar Nav */
+  .sidebar {
+    width: 220px;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    background: rgba(10,13,26,0.95);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .sidebar-logo {
+    padding: 0 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+
+  .sidebar-logo .initials {
+    width: 40px; height: 40px;
+    border: 1px solid var(--green);
+    box-shadow: 0 0 12px var(--green-glow);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 0.75rem;
+  }
+
+  .sidebar-logo .name {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.6rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    letter-spacing: 0.03em;
+    border-left: 2px solid transparent;
+  }
+
+  .nav-item:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .nav-item.active {
+    color: var(--green);
+    border-left-color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+  }
+
+  .social-icon {
+    width: 32px; height: 32px;
+    border: 1px solid var(--border-accent);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: all 0.15s ease;
+    font-size: 12px;
+  }
+
+  .social-icon:hover { color: var(--green); border-color: var(--green); box-shadow: 0 0 8px var(--green-glow); }
+
+  /* Main content */
+  .main {
+    margin-left: 220px;
+    flex: 1;
+    min-height: 100vh;
+  }
+
+  /* Section containers */
+  .section {
+    display: none;
+    min-height: 100vh;
+    padding: 4rem;
+  }
+
+  .section.active { display: block; }
+
+  /* Terminal header bar */
+  .terminal-bar {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 3rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .terminal-bar::before {
+    content: '// ';
+    color: var(--green);
+  }
+
+  /* ── HOME ── */
+  .hero {
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+  }
+
+  .hero-grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(16,185,129,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16,185,129,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .status-line {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-avatar-name {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .avatar-ring {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    border: 1.5px solid var(--green);
+    box-shadow: 0 0 20px var(--green-glow), inset 0 0 20px rgba(16,185,129,0.05);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green);
+    flex-shrink: 0;
+    background: var(--bg-card);
+    position: relative;
+  }
+
+  .avatar-ring::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 1px solid rgba(16,185,129,0.15);
+  }
+
+  .hero-name {
+    font-family: var(--mono);
+    font-size: 3.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .hero-subtitle {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--amber);
+    margin-bottom: 2rem;
+    letter-spacing: 0.03em;
+  }
+
+  .hero-bio {
+    max-width: 680px;
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+
+  .tag-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .tag-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+  .tag-cyan { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(6,182,212,0.2); }
+  .tag-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+
+  .cta-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    padding: 10px 20px;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.15s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+
+  .btn-primary:hover { background: #0da875; box-shadow: 0 0 16px var(--green-glow); }
+
+  .btn-outline {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    padding: 10px 20px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-accent);
+    border-radius: 2px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+
+  .btn-outline:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 4rem;
+  }
+
+  .stat-cell {
+    background: var(--bg-card);
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: block;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    display: block;
+  }
+
+  /* ── ABOUT ── */
+  .section-title {
+    font-family: var(--mono);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-subtitle {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 3rem;
+    letter-spacing: 0.04em;
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .prose {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.85;
+  }
+
+  .prose p { margin-bottom: 1rem; }
+  .prose p:last-child { margin-bottom: 0; }
+
+  /* Arsenal */
+  .arsenal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .arsenal-module {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    transition: border-color 0.2s ease;
+  }
+
+  .arsenal-module:hover { border-color: var(--border-accent); }
+
+  .arsenal-module:nth-child(1) { border-top: 2px solid var(--green); }
+  .arsenal-module:nth-child(2) { border-top: 2px solid var(--amber); }
+  .arsenal-module:nth-child(3) { border-top: 2px solid var(--cyan); }
+
+  .arsenal-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  .arsenal-label.green { color: var(--green); }
+  .arsenal-label.amber { color: var(--amber); }
+  .arsenal-label.cyan { color: var(--cyan); }
+
+  .arsenal-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .tool-pill {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border: 1px solid var(--border-accent);
+    border-radius: 2px;
+    color: var(--text-secondary);
+    margin: 3px 3px 3px 0;
+    transition: all 0.15s ease;
+  }
+
+  .tool-pill:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+
+  /* ── TIMELINE ── */
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--green), transparent);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 3rem;
+    padding-left: 1.5rem;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2rem;
+    top: 6px;
+    width: 8px; height: 8px;
+    border: 1px solid var(--green);
+    background: var(--bg-void);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--green-glow);
+  }
+
+  .timeline-company {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 2px;
+  }
+
+  .timeline-role {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .timeline-date {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 1rem;
+  }
+
+  .timeline-bullets {
+    list-style: none;
+  }
+
+  .timeline-bullets li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 6px;
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .timeline-bullets li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: var(--amber);
+  }
+
+  /* ── CERTS ── */
+  .cert-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .cert-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .cert-card:hover { border-color: var(--border-accent); background: var(--bg-card-hover); }
+
+  .cert-icon {
+    width: 36px; height: 36px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .cert-icon.green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .cert-icon.amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+  .cert-icon.cyan { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(6,182,212,0.2); }
+
+  .cert-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+
+  .cert-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── PROJECTS ── */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .project-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s ease;
+  }
+
+  .project-card:hover {
+    border-color: var(--border-accent);
+    background: var(--bg-card-hover);
+    transform: translateY(-1px);
+  }
+
+  .project-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .project-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+  }
+
+  .project-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    flex: 1;
+    margin-bottom: 1.5rem;
+  }
+
+  .project-link {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--green);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: gap 0.15s ease;
+  }
+
+  .project-link:hover { gap: 10px; }
+
+  /* ── THM ── */
+  .thm-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .thm-category {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+  }
+
+  .thm-cat-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .thm-cat-title.blue { color: var(--cyan); }
+  .thm-cat-title.red { color: var(--red); }
+  .thm-cat-title.green { color: var(--green); }
+  .thm-cat-title.amber { color: var(--amber); }
+
+  .thm-item {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .thm-item::before {
+    content: '✓';
+    color: var(--green);
+    font-size: 10px;
+  }
+
+  /* ── BLOGS ── */
+  .blog-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .blog-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .blog-card:hover { border-color: var(--border-accent); }
+
+  .blog-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0.75rem;
+  }
+
+  .blog-platform {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    background: var(--cyan-dim);
+    color: var(--cyan);
+    border: 1px solid rgba(6,182,212,0.2);
+  }
+
+  .blog-date {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .blog-status {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    background: var(--amber-dim);
+    color: var(--amber);
+    border: 1px solid rgba(245,158,11,0.2);
+  }
+
+  .blog-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+
+  .blog-excerpt {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* ── CONTACT ── */
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .contact-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2rem;
+  }
+
+  .contact-link-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--text-secondary);
+    transition: color 0.15s ease;
+  }
+
+  .contact-link-row:hover { color: var(--green); }
+  .contact-link-row:last-child { border-bottom: none; }
+
+  .contact-link-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    flex: 1;
+  }
+
+  .contact-link-arrow {
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: transform 0.15s ease;
+  }
+
+  .contact-link-row:hover .contact-link-arrow { transform: translateX(4px); color: var(--green); }
+
+  /* Dividers */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 2.5rem 0;
+  }
+
+  /* Responsive hint */
+  @media (max-width: 900px) {
+    .sidebar { width: 180px; }
+    .main { margin-left: 180px; }
+    .section { padding: 2rem; }
+    .projects-grid { grid-template-columns: repeat(2,1fr); }
+    .arsenal-grid { grid-template-columns: 1fr; }
+    .about-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2,1fr); }
+    .hero-name { font-size: 2.2rem; }
+  }
+
+  /* Scan line effect on hero */
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, rgba(16,185,129,0.08), transparent);
+    animation: scanline 6s linear infinite;
+    pointer-events: none;
+  }
+
+  /* Cursor blink */
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .cursor { animation: blink 1.2s infinite; color: var(--green); }
+
+  /* Tooltip badge for "CURRENT" */
+  .badge-current {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(16,185,129,0.3);
+    margin-left: 8px;
+    vertical-align: middle;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="initials">NS</div>
+      <div class="name">nishchal_s</div>
+    </div>
+
+    <a class="nav-item active" onclick="showSection('home')" href="#">
+      <span class="nav-dot"></span>Home
+    </a>
+    <a class="nav-item" onclick="showSection('about')" href="#">
+      <span class="nav-dot"></span>About
+    </a>
+    <a class="nav-item" onclick="showSection('timeline')" href="#">
+      <span class="nav-dot"></span>Experience
+    </a>
+    <a class="nav-item" onclick="showSection('certs')" href="#">
+      <span class="nav-dot"></span>Certifications
+    </a>
+    <a class="nav-item" onclick="showSection('projects')" href="#">
+      <span class="nav-dot"></span>Projects
+    </a>
+    <a class="nav-item" onclick="showSection('thm')" href="#">
+      <span class="nav-dot"></span>TryHackMe
+    </a>
+    <a class="nav-item" onclick="showSection('blogs')" href="#">
+      <span class="nav-dot"></span>Blog
+    </a>
+    <a class="nav-item" onclick="showSection('contact')" href="#">
+      <span class="nav-dot"></span>Contact
+    </a>
+
+    <div class="sidebar-footer">
+      <a class="social-icon" href="https://github.com/NishchalSreevathsa" target="_blank" rel="noopener" title="GitHub">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+      </a>
+      <a class="social-icon" href="https://linkedin.com/in/nishchal-s/" target="_blank" rel="noopener" title="LinkedIn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      </a>
+      <a class="social-icon" href="https://tryhackme.com/p/NishchalS" target="_blank" rel="noopener" title="TryHackMe">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10.705 0C7.54 0 4.902 2.285 4.374 5.298A4.222 4.222 0 000 9.47a4.222 4.222 0 004.222 4.222h6.483V0zm0 1.06v11.572H4.222A3.16 3.16 0 011.06 9.47a3.16 3.16 0 013.16-3.16h.355l.062-.34C4.983 3.135 7.6 1.06 10.705 1.06zM10.705 14.307H4.222a.53.53 0 100 1.061h6.483v-1.06zm0 2.122H4.222a.53.53 0 100 1.061h6.483v-1.06zm0 2.122H4.222a.53.53 0 100 1.061h6.483V18.55zm3.183-18.55v13.693h6.483A4.222 4.222 0 0024 9.47a4.222 4.222 0 00-4.222-4.222l-.355.001-.063-.341C18.99 2.285 16.352 0 13.188 0h.7zm0 1.06c3.105 0 5.722 2.075 6.128 4.91l.062.34h.355a3.16 3.16 0 013.16 3.16 3.16 3.16 0 01-3.16 3.162h-6.545V1.06zm0 13.247v1.06h6.483a.53.53 0 100-1.06zm0 2.122v1.061h6.483a.53.53 0 100-1.06zm0 2.122V19.61h6.483a.53.53 0 100-1.061z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- HOME -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="section active" id="home">
+      <div class="hero">
+        <div class="hero-grid-bg"></div>
+        <div class="scan-line"></div>
+
+        <div class="status-line">[+] SYSTEM ONLINE — THREAT INTELLIGENCE ACTIVE <span class="cursor">█</span></div>
+
+        <div class="hero-avatar-name">
+          <div class="avatar-ring">NS</div>
+          <h1 class="hero-name">Nishchal<br>Sreevathsa</h1>
+        </div>
+
+        <div class="hero-subtitle">[+] Cybersecurity Engineer | Purple Teaming | Agentic AI &amp; Web3 Security</div>
+
+        <p class="hero-bio">
+          A seasoned Cybersecurity Engineer operating at the intersection of defense, offense, and emerging technology. Architecting security systems across <strong style="color:var(--text-primary)">Web3/Blockchain</strong>, <strong style="color:var(--text-primary)">Healthcare data infrastructures</strong>, and <strong style="color:var(--text-primary)">Financial security ecosystems</strong>. Fluent across the full attack-defend spectrum — from SIEM tuning and EDR response to smart contract auditing and AI-augmented SOC automation.
+        </p>
+
+        <div class="hero-tags">
+          <span class="tag tag-green">Purple Teaming</span>
+          <span class="tag tag-amber">Threat Intelligence</span>
+          <span class="tag tag-cyan">Web3 Security</span>
+          <span class="tag tag-green">SIEM / EDR</span>
+          <span class="tag tag-amber">Penetration Testing</span>
+          <span class="tag tag-cyan">Agentic AI</span>
+          <span class="tag tag-green">Cloud Governance</span>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn-primary" onclick="showSection('projects')" href="#">View Projects →</a>
+          <a class="btn-outline" onclick="showSection('contact')" href="#">Download CV</a>
+          <a class="btn-outline" href="https://github.com/NishchalSreevathsa" target="_blank" rel="noopener">GitHub ↗</a>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-cell">
+            <span class="stat-val" style="color:var(--green)">5+</span>
+            <span class="stat-label">Years Experience</span>
+          </div>
+          <div class="stat-cell">
+            <span class="stat-val" style="color:var(--amber)">9</span>
+            <span class="stat-label">Projects Built</span>
+          </div>
+          <div class="stat-cell">
+            <span class="stat-val" style="color:var(--cyan)">6</span>
+            <span class="stat-label">Certifications</span>
+          </div>
+          <div class="stat-cell">
+            <span class="stat-val" style="color:var(--green)">3</span>
+            <span class="stat-label">Security Domains</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- ABOUT -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="section" id="about">
+
+      
+      <h2 class="section-title">Technical Profile</h2>
+      <div class="section-subtitle">// engineering background &amp; cross-domain expertise</div>
+
+      <div class="about-grid">
+        <div class="prose">
+          <p>
+            My path into security engineering began with a foundation in software development — understanding systems from the inside out before learning to break and defend them. That dual perspective became my core advantage: I don't just monitor threats, I understand the underlying code paths and protocol mechanics that make exploits possible.
+          </p>
+          <p>
+            Today I operate as a true Purple Team practitioner — simultaneously thinking like an attacker while architecting defensive systems that hold. My work spans SIEM pipeline optimization, smart contract vulnerability analysis, cloud governance frameworks, and the emerging discipline of AI-augmented security operations.
+          </p>
+        </div>
+        <div class="prose">
+          <p>
+            Across Web3/Blockchain environments, I've worked deep in smart contract audit workflows, DeFi protocol risk assessment, and Solidity security pattern enforcement. In Healthcare and Financial domains, I've implemented HIPAA/PCI-aligned data governance, threat modeling frameworks, and continuous vulnerability management pipelines.
+          </p>
+          <p>
+            My current focus: building LLM-powered security agents using Model Context Protocol (MCP) to automate SOC analyst workflows — reducing manual triage overhead while keeping sensitive data strictly local through privacy-first architecture.
+          </p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2 class="section-title" style="margin-bottom:0.5rem">Technical Arsenal</h2>
+      <div class="section-subtitle">// security tooling organized by operational domain</div>
+
+      <div class="arsenal-grid">
+        <div class="arsenal-module">
+          <div class="arsenal-label green">● DEFENSIVE OPS</div>
+          <div class="arsenal-title">SIEM / SOC / EDR Operations</div>
+          <div>
+            <span class="tool-pill">Splunk</span>
+            <span class="tool-pill">Wazuh</span>
+            <span class="tool-pill">Microsoft Sentinel</span>
+            <span class="tool-pill">Microsoft Defender</span>
+            <span class="tool-pill">CrowdStrike</span>
+            <span class="tool-pill">Vulnerability Mgmt</span>
+            <span class="tool-pill">Threat Hunting</span>
+            <span class="tool-pill">Incident Response</span>
+          </div>
+        </div>
+        <div class="arsenal-module">
+          <div class="arsenal-label amber">◆ OFFENSIVE OPS</div>
+          <div class="arsenal-title">Penetration Testing &amp; Auditing</div>
+          <div>
+            <span class="tool-pill">Kali Linux</span>
+            <span class="tool-pill">Metasploit</span>
+            <span class="tool-pill">Burp Suite</span>
+            <span class="tool-pill">Semgrep</span>
+            <span class="tool-pill">Gitleaks</span>
+            <span class="tool-pill">OWASP Threat Dragon</span>
+            <span class="tool-pill">SAST / DAST</span>
+            <span class="tool-pill">Smart Contract Audit</span>
+          </div>
+        </div>
+        <div class="arsenal-module">
+          <div class="arsenal-label cyan">◈ CLOUD &amp; AI</div>
+          <div class="arsenal-title">Infrastructure &amp; AI Automation</div>
+          <div>
+            <span class="tool-pill">AWS</span>
+            <span class="tool-pill">GCP</span>
+            <span class="tool-pill">Azure</span>
+            <span class="tool-pill">Terraform</span>
+            <span class="tool-pill">LLMs</span>
+            <span class="tool-pill">RAG Pipelines</span>
+            <span class="tool-pill">MCP Agents</span>
+            <span class="tool-pill">Python</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- TIMELINE -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="section" id="timeline">
+
+
+      <h2 class="section-title">Professional Timeline</h2>
+      <div class="section-subtitle">// career progression across security engineering domains</div>
+
+      <div class="timeline">
+
+        <div class="timeline-item">
+          <div class="timeline-company">Amby, Inc <span class="badge-current">CURRENT</span></div>
+          <div class="timeline-role">Blockchain Security Engineer</div>
+          <div class="timeline-date">NOV 2025 – PRESENT</div>
+          <ul class="timeline-bullets">
+            <li>Conducting comprehensive smart contract vulnerability assessments across DeFi protocols, identifying critical attack vectors including reentrancy, flash loan exploits, and access control misconfigurations in Solidity codebases.</li>
+            <li>Architecting automated SAST/DAST security pipelines integrated into CI/CD workflows to enforce continuous blockchain security validation before contract deployment.</li>
+            <li>Performing multi-layer Web3 threat modeling, mapping adversarial attack paths against on-chain and off-chain components in decentralized application ecosystems.</li>
+            <li>Engineering MCP-based AI agents to accelerate blockchain forensic analysis — correlating on-chain transaction patterns with known exploit signatures across Ethereum and EVM-compatible chains.</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-company">Ambrosia Systems Inc</div>
+          <div class="timeline-role">Cybersecurity Analyst</div>
+          <div class="timeline-date">JUL 2024 – OCT 2025</div>
+          <ul class="timeline-bullets">
+            <li>Operated as a core analyst within a 24/7 SOC, executing full incident response lifecycle management across enterprise-scale Splunk and Wazuh SIEM environments.</li>
+            <li>Deployed and tuned CrowdStrike and Microsoft Defender EDR policies, building custom detection logic that improved threat signal fidelity across Windows, Linux, and macOS endpoints.</li>
+            <li>Engineered cloud security governance frameworks across AWS and GCP environments, enforcing IAM least-privilege architectures and automated compliance posture monitoring.</li>
+            <li>Built Python-based automation tooling to orchestrate SOC workflows — integrating threat intelligence feeds, alert triage logic, and case management into a unified response pipeline.</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-company">IQ4</div>
+          <div class="timeline-role">Cybersecurity Analyst Intern</div>
+          <div class="timeline-date">OCT 2022 – JAN 2023</div>
+          <ul class="timeline-bullets">
+            <li>Executed structured vulnerability assessments against web applications using Burp Suite, documenting OWASP Top 10 vulnerability chains with exploitation proof-of-concepts.</li>
+            <li>Participated in blue team tabletop exercises simulating ransomware and data exfiltration scenarios, contributing to playbook refinement and containment procedure validation.</li>
+            <li>Assisted in security awareness program development, researching social engineering attack vectors to produce realistic phishing simulation frameworks.</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-company">Cerner Corporation</div>
+          <div class="timeline-role">Delivery Consultant</div>
+          <div class="timeline-date">AUG 2021 – JUL 2022</div>
+          <ul class="timeline-bullets">
+            <li>Managed secure deployment and configuration of Electronic Health Record (EHR) systems within HIPAA-compliant healthcare environments, ensuring data integrity across patient data pipelines.</li>
+            <li>Collaborated with clinical and IT stakeholders to identify configuration vulnerabilities in healthcare system integrations, enforcing data access controls aligned with regulatory requirements.</li>
+            <li>Delivered technical documentation and security hardening guidance for healthcare infrastructure teams implementing enterprise EHR rollouts.</li>
+          </ul>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-company">Benson Service Private Limited</div>
+          <div class="timeline-role">Software Engineer Intern</div>
+          <div class="timeline-date">AUG 2019 – JUL 2021</div>
+          <ul class="timeline-bullets">
+            <li>Developed backend service components and RESTful API integrations, building a core software engineering foundation that later informed security-first design thinking.</li>
+            <li>Performed code reviews focused on input validation, authentication flow integrity, and secure session management across web application stacks.</li>
+            <li>Participated in internal security audits of application logic, identifying and remediating injection vulnerabilities and insecure direct object reference patterns.</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- CERTIFICATIONS -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="section" id="certs">
+
+
+      <h2 class="section-title">Certifications</h2>
+      <div class="section-subtitle">// active credentials &amp; professional validations</div>
+
+      <div class="cert-grid">
+
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--green);border-radius:4px;padding:1.5rem;display:flex;gap:1rem;align-items:flex-start;">
+          <div class="cert-icon green">SEC+</div>
+          <div>
+            <div class="cert-name">CompTIA Security+</div>
+            <div class="cert-meta">EARNED: APR 2026 &nbsp;·&nbsp; EXPIRES: APR 2029</div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--amber);border-radius:4px;padding:1.5rem;display:flex;gap:1rem;align-items:flex-start;">
+          <div class="cert-icon amber">TF</div>
+          <div>
+            <div class="cert-name">HashiCorp Certified: Terraform Associate</div>
+            <div class="cert-meta">INFRASTRUCTURE AS CODE &nbsp;·&nbsp; ACTIVE</div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--cyan);border-radius:4px;padding:1.5rem;display:flex;gap:1rem;align-items:flex-start;">
+          <div class="cert-icon cyan">AI</div>
+          <div>
+            <div class="cert-name">The School of AI — Extensive Agentic AI (EAG V2)</div>
+            <div class="cert-meta">EARNED: APR 2026 &nbsp;·&nbsp; AGENTIC SYSTEMS</div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--green);border-radius:4px;padding:1.5rem;display:flex;gap:1rem;align-items:flex-start;">
+          <div class="cert-icon green">GCP</div>
+          <div>
+            <div class="cert-name">Google Cybersecurity Professional Certificate V2</div>
+            <div class="cert-meta">GOOGLE &nbsp;·&nbsp; ACTIVE</div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--amber);border-radius:4px;padding:1.5rem;display:flex;gap:1rem;align-items:flex-start;">
+          <div class="cert-icon amber">FT</div>
+          <div>
+            <div class="cert-name">Fortinet Certified Fundamentals Cybersecurity</div>
+            <div class="cert-meta">FORTINET NSE &nbsp;·&nbsp; NETWORK SECURITY</div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--cyan);border-radius:4px;padding:1.5rem;display:flex;gap:1rem;align-items:flex-start;">
+          <div class="cert-icon cyan">GCE</div>
+          <div>
+            <div class="cert-name">Architecting with Google Compute Engine</div>
+            <div class="cert-meta">GOOGLE CLOUD &nbsp;·&nbsp; INFRASTRUCTURE</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- PROJECTS -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="section" id="projects">
+
+
+      <h2 class="section-title">Security Projects</h2>
+      <div class="section-subtitle">// open-source tools, agents, and research implementations</div>
+
+      <div class="projects-grid">
+
+        <div class="project-card" style="border-top:2px solid var(--cyan)">
+          <div class="project-tags">
+            <span class="tag tag-cyan">AI Agent</span>
+            <span class="tag tag-green">MCP</span>
+          </div>
+          <div class="project-name">Cyber Evidence Annotator</div>
+          <div class="project-desc">
+            An MCP-native agent that automates forensic artifact annotation — ingesting raw security event logs, correlating IOCs, and generating structured threat intelligence reports through LLM-powered chain-of-thought reasoning.
+          </div>
+          <a class="project-link" href="https://github.com/NishchalSreevathsa/Cyber-Evidence-Annotator" target="_blank" rel="noopener">
+            VIEW SOURCE CODE →
+          </a>
+        </div>
+
+        <div class="project-card" style="border-top:2px solid var(--green)">
+          <div class="project-tags">
+            <span class="tag tag-cyan">AI Agent</span>
+            <span class="tag tag-green">Privacy</span>
+          </div>
+          <div class="project-name">PrivacyShield Agent</div>
+          <div class="project-desc">
+            A local-first privacy enforcement agent using RAG pipelines and LLMs to detect PII exposure, classify sensitive data flows, and enforce data governance policies — operating entirely without external API calls.
+          </div>
+          <a class="project-link" href="https://github.com/NishchalSreevathsa/PrivacyShield-Agent" target="_blank" rel="noopener">
+            VIEW SOURCE CODE →
+          </a>
+        </div>
+
+        <div class="project-card" style="border-top:2px solid var(--amber)">
+          <div class="project-tags">
+            <span class="tag tag-amber">Extension</span>
+            <span class="tag tag-green">Recon</span>
+          </div>
+          <div class="project-name">Bounty Watch</div>
+          <div class="project-desc">
+            A Chrome Extension designed for bug bounty hunters — aggregating active programs across HackerOne, Bugcrowd, and Intigriti, with real-time scope filtering, reward tracking, and target discovery automation.
+          </div>
+          <a class="project-link" href="https://github.com/NishchalSreevathsa/Bounty-Watch" target="_blank" rel="noopener">
+            VIEW SOURCE CODE →
+          </a>
+        </div>
+
+        <div class="project-card" style="border-top:2px solid var(--cyan)">
+          <div class="project-tags">
+            <span class="tag tag-cyan">AI</span>
+            <span class="tag tag-amber">Extension</span>
+            <span class="tag tag-green">Phishing</span>
+          </div>
+          <div class="project-name">PhishGuard Architect</div>
+          <div class="project-desc">
+            A standalone LLM-powered browser extension for real-time phishing risk assessment. Analyzes email headers, link structures, and page content against threat intelligence models to generate per-message risk scores with actionable findings.
+          </div>
+          <a class="project-link" href="https://github.com/NishchalSreevathsa/PhishGuard-Architect" target="_blank" rel="noopener">
+            VIEW SOURCE CODE →
+          </a>
+        </div>
+
+        <div class="project-card" style="border-top:2px solid var(--amber)">
+          <div class="project-tags">
+            <span class="tag tag-amber">Extension</span>
+            <span class="tag tag-green">DOM Analysis</span>
+          </div>
+          <div class="project-name">NetScope Guardian</div>
+          <div class="project-desc">
+            A real-time URL and DOM risk analyzer Chrome Extension, distinct from PhishGuard. Performs live inspection of active page elements — detecting malicious script injections, suspicious redirects, and drive-by download patterns as users browse.
+          </div>
+          <a class="project-link" href="https://github.com/NishchalSreevathsa/netscope-guardian" target="_blank" rel="noopener">
+            VIEW SOURCE CODE →
+          </a>
+        </div>
+
+        <div class="project-card" style="border-top:2px solid var(--green)">
+          <div class="project-tags">
+            <span class="tag tag-green">Network</span>
+            <span class="tag tag-cyan">Infrastructure</span>
+          </div>
+          <div class="project-name">Fresh Connections Grocery Chain Networks</div>
+          <div class="project-desc">
+            End-to-end enterprise network architecture design for a multi-location grocery chain — implementing VLAN segmentation, firewall policy enforcement, and secure point-of-sale network isolation with full network topology documentation.
+          </div>
+          <a class="project-link" href="https://github.com/NishchalSreevathsa/Fresh-Connections" target="_blank" rel="noopener">
+            VIEW SOURCE CODE →
+          </a>
+        </div>
+
+        <div class="project-card" style="border-top:2px solid var(--cyan)">
+          <div class="project-tags">
+            <span class="tag tag-cyan">Virtualization</span>
+            <span class="tag tag-green">Hardening</span>
+          </div>
+          <div class="project-name">Hypervisor-Based Secure Windows Environment</div>
+          <div class="project-desc">
+            A fully isolated hypervisor environment simulating enterprise-grade Windows security configurations — implementing AppLocker policies, Credential Guard, attack surface reduction rules, and advanced audit logging pipelines.
+          </div>
+          <a class="project-link" href="https://github.com/NishchalSreevathsa/Hypervisor-Secure-Windows" target="_blank" rel="noopener">
+            VIEW SOURCE CODE →
+          </a>
+        </div>
+
+        <div class="project-card" style="border-top:2px solid var(--amber)">
+          <div class="project-tags">
+            <span class="tag tag-amber">Red Team</span>
+            <span class="tag tag-green">Pentest</span>
+          </div>
+          <div class="project-name">Simulated Campus Network Penetration Testing</div>
+          <div class="project-desc">
+            A structured penetration testing engagement against a simulated university network topology — executing reconnaissance, exploitation, lateral movement, and post-exploitation phases with full kill chain documentation and remediation reporting.
+          </div>
+          <a class="project-link" href="https://github.com/NishchalSreevathsa/Campus-Network-Pentest" target="_blank" rel="noopener">
+            VIEW SOURCE CODE →
+          </a>
+        </div>
+
+        <div class="project-card" style="border-top:2px solid var(--green)">
+          <div class="project-tags">
+            <span class="tag tag-cyan">IoT</span>
+            <span class="tag tag-green">Automation</span>
+          </div>
+          <div class="project-name">IntelliHome IoT Smart Living Automation</div>
+          <div class="project-desc">
+            A secure IoT home automation platform with an emphasis on device network isolation, encrypted MQTT communication channels, and zero-trust device authentication — engineered with security-by-design principles throughout.
+          </div>
+          <a class="project-link" href="https://github.com/NishchalSreevathsa/IntelliHome-IoT" target="_blank" rel="noopener">
+            VIEW SOURCE CODE →
+          </a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- TRYHACKME -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="section" id="thm">
+
+
+      <h2 class="section-title">TryHackMe Milestones</h2>
+      <div class="section-subtitle">// hands-on lab completions organized by security domain</div>
+
+      <div class="thm-grid">
+
+        <div class="thm-category">
+          <div class="thm-cat-title blue">◈ Blue Teaming Milestones</div>
+          <div class="thm-item">SOC Level 1 Learning Path</div>
+          <div class="thm-item">Cyber Defense Path</div>
+          <div class="thm-item">Splunk: Basics to Advanced</div>
+          <div class="thm-item">SIEM Fundamentals</div>
+          <div class="thm-item">Threat Intelligence Tools</div>
+          <div class="thm-item">Incident Response Fundamentals</div>
+          <div class="thm-item">Digital Forensics &amp; Incident Response</div>
+          <div class="thm-item">Wireshark: Traffic Analysis</div>
+          <div class="thm-item">Windows Forensics</div>
+          <div class="thm-item">Malware Analysis Fundamentals</div>
+        </div>
+
+        <div class="thm-category">
+          <div class="thm-cat-title red">◆ Red Teaming Milestones</div>
+          <div class="thm-item">Red Team Fundamentals</div>
+          <div class="thm-item">Jr Penetration Tester Path</div>
+          <div class="thm-item">Metasploit: Introduction</div>
+          <div class="thm-item">Burp Suite: The Basics</div>
+          <div class="thm-item">Web Application Hacking</div>
+          <div class="thm-item">OWASP Top 10 — 2021</div>
+          <div class="thm-item">Active Directory Basics</div>
+          <div class="thm-item">Privilege Escalation — Linux</div>
+          <div class="thm-item">Privilege Escalation — Windows</div>
+          <div class="thm-item">Post-Exploitation Basics</div>
+        </div>
+
+        <div class="thm-category">
+          <div class="thm-cat-title green">● Foundations Milestones</div>
+          <div class="thm-item">Pre-Security Learning Path</div>
+          <div class="thm-item">Introduction to Cybersecurity</div>
+          <div class="thm-item">Networking Fundamentals</div>
+          <div class="thm-item">Linux Fundamentals (1–3)</div>
+          <div class="thm-item">Windows Fundamentals (1–3)</div>
+          <div class="thm-item">How the Web Works</div>
+          <div class="thm-item">DNS in Detail</div>
+          <div class="thm-item">HTTP in Detail</div>
+          <div class="thm-item">Cryptography Fundamentals</div>
+          <div class="thm-item">Hashing — Crypto 101</div>
+        </div>
+
+        <div class="thm-category">
+          <div class="thm-cat-title amber">◈ Specialized &amp; Miscellaneous</div>
+          <div class="thm-item">Cloud Security Fundamentals</div>
+          <div class="thm-item">AWS Security</div>
+          <div class="thm-item">DevSecOps Fundamentals</div>
+          <div class="thm-item">MITRE ATT&amp;CK Framework</div>
+          <div class="thm-item">Phishing Analysis</div>
+          <div class="thm-item">Vulnerability Management</div>
+          <div class="thm-item">Security Engineer Learning Path</div>
+          <div class="thm-item">CTF Challenges — Various</div>
+          <div class="thm-item">Introduction to AI Security</div>
+          <div class="thm-item">Sigma Rules &amp; YARA</div>
+        </div>
+
+      </div>
+
+      <div style="text-align:center;padding-top:1rem;">
+        <a class="btn-primary" href="https://tryhackme.com/p/NishchalS" target="_blank" rel="noopener" style="font-size:13px;padding:14px 28px;">
+          View Live TryHackMe Profile ↗
+        </a>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- BLOGS -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="section" id="blogs">
+
+
+      <h2 class="section-title">Technical Blog</h2>
+      <div class="section-subtitle">// upcoming writeups, CTF walkthroughs &amp; security research</div>
+
+      <div class="blog-grid">
+
+        <div class="blog-card">
+          <div class="blog-meta">
+            <span class="blog-platform">Medium</span>
+            <span class="blog-date">Q2 2026</span>
+            <span class="blog-status">COMING SOON</span>
+          </div>
+          <div class="blog-title">Building MCP Security Agents: Automating SOC Triage with Local LLMs</div>
+          <div class="blog-excerpt">
+            A deep technical walkthrough of architecting Model Context Protocol agents for SOC automation — covering tool chaining, local model deployment, and alert correlation without sending sensitive data to external APIs.
+          </div>
+        </div>
+
+        <div class="blog-card">
+          <div class="blog-meta">
+            <span class="blog-platform">Medium</span>
+            <span class="blog-date">Q2 2026</span>
+            <span class="blog-status">COMING SOON</span>
+          </div>
+          <div class="blog-title">Smart Contract Attack Vectors: Reentrancy, Flash Loans, and Access Control Flaws</div>
+          <div class="blog-excerpt">
+            An adversarial breakdown of the most exploited DeFi vulnerability classes — with Solidity code samples, real-world exploit case studies from Ethereum mainnet, and structured remediation patterns for each attack category.
+          </div>
+        </div>
+
+        <div class="blog-card">
+          <div class="blog-meta">
+            <span class="blog-platform">Internal</span>
+            <span class="blog-date">Q3 2026</span>
+            <span class="blog-status">COMING SOON</span>
+          </div>
+          <div class="blog-title">Wazuh + Splunk Correlation Rules: Eliminating Alert Fatigue in Hybrid Environments</div>
+          <div class="blog-excerpt">
+            A practical guide to writing cross-platform SIEM correlation logic that bridges Wazuh agent events with Splunk analytics pipelines — focusing on high-fidelity detection engineering over raw alert volume reduction.
+          </div>
+        </div>
+
+        <div class="blog-card">
+          <div class="blog-meta">
+            <span class="blog-platform">Medium</span>
+            <span class="blog-date">Q3 2026</span>
+            <span class="blog-status">COMING SOON</span>
+          </div>
+          <div class="blog-title">CTF Walkthrough: Web3 Capture The Flag — Ethereum Exploitation Series</div>
+          <div class="blog-excerpt">
+            Detailed walkthrough of a multi-stage Web3 CTF challenge series — documenting the exploit chain from contract reconnaissance to fund extraction, with annotated Foundry test scripts and remediation notes.
+          </div>
+        </div>
+
+        <div class="blog-card">
+          <div class="blog-meta">
+            <span class="blog-platform">Internal</span>
+            <span class="blog-date">Q3 2026</span>
+            <span class="blog-status">COMING SOON</span>
+          </div>
+          <div class="blog-title">RAG-Powered Threat Intelligence: Building a Local Knowledge Base for Threat Hunting</div>
+          <div class="blog-excerpt">
+            Engineering a retrieval-augmented generation pipeline over MITRE ATT&amp;CK, CVE databases, and threat intelligence feeds — enabling natural language querying of structured adversary TTPs without cloud dependency.
+          </div>
+        </div>
+
+        <div class="blog-card">
+          <div class="blog-meta">
+            <span class="blog-platform">Medium</span>
+            <span class="blog-date">Q4 2026</span>
+            <span class="blog-status">COMING SOON</span>
+          </div>
+          <div class="blog-title">Terraform Security Guardrails: Enforcing Cloud Governance at Infrastructure Scale</div>
+          <div class="blog-excerpt">
+            Implementing preventive and detective security controls natively within Terraform workflows — covering Sentinel policy-as-code, custom validation rules, and automated compliance drift detection across AWS and GCP environments.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- CONTACT -->
+    <!-- ══════════════════════════════════════════ -->
+    <section class="section" id="contact">
+
+
+      <h2 class="section-title">Get In Touch</h2>
+      <div class="section-subtitle">// open to security research collaborations, consulting, and full-time roles</div>
+
+      <div class="contact-grid">
+
+        <div class="contact-card">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);letter-spacing:0.08em;margin-bottom:1.5rem;text-transform:uppercase;">Direct Channels</div>
+
+          <a class="contact-link-row" href="mailto:sreevathsa.nishchal@gmail.com">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-secondary);flex-shrink:0"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <span class="contact-link-label">sreevathsa.nishchal@gmail.com</span>
+            <span class="contact-link-arrow">→</span>
+          </a>
+
+          <a class="contact-link-row" href="https://github.com/NishchalSreevathsa" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--text-secondary);flex-shrink:0"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            <span class="contact-link-label">github.com/NishchalSreevathsa</span>
+            <span class="contact-link-arrow">→</span>
+          </a>
+
+          <a class="contact-link-row" href="https://linkedin.com/in/nishchal-s/" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--text-secondary);flex-shrink:0"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            <span class="contact-link-label">linkedin.com/in/nishchal-s</span>
+            <span class="contact-link-arrow">→</span>
+          </a>
+
+          <a class="contact-link-row" href="https://tryhackme.com/p/NishchalS" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--text-secondary);flex-shrink:0"><path d="M10.705 0C7.54 0 4.902 2.285 4.374 5.298A4.222 4.222 0 000 9.47a4.222 4.222 0 004.222 4.222h6.483V0zm0 1.06v11.572H4.222A3.16 3.16 0 011.06 9.47a3.16 3.16 0 013.16-3.16h.355l.062-.34C4.983 3.135 7.6 1.06 10.705 1.06zM10.705 14.307H4.222a.53.53 0 100 1.061h6.483v-1.06zm0 2.122H4.222a.53.53 0 100 1.061h6.483v-1.06zm0 2.122H4.222a.53.53 0 100 1.061h6.483V18.55zm3.183-18.55v13.693h6.483A4.222 4.222 0 0024 9.47a4.222 4.222 0 00-4.222-4.222l-.355.001-.063-.341C18.99 2.285 16.352 0 13.188 0h.7zm0 1.06c3.105 0 5.722 2.075 6.128 4.91l.062.34h.355a3.16 3.16 0 013.16 3.16 3.16 3.16 0 01-3.16 3.162h-6.545V1.06zm0 13.247v1.06h6.483a.53.53 0 100-1.06zm0 2.122v1.061h6.483a.53.53 0 100-1.06zm0 2.122V19.61h6.483a.53.53 0 100-1.061z"/></svg>
+            <span class="contact-link-label">tryhackme.com/p/NishchalS</span>
+            <span class="contact-link-arrow">→</span>
+          </a>
+        </div>
+
+        <div class="contact-card" style="display:flex;flex-direction:column;gap:1rem;justify-content:center;align-items:flex-start;">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.5rem;">CV</div>
+          <p class="prose" style="font-size:13px;">
+            Download the full CV for a complete overview of experience, certifications, and security engineering portfolio, formatted for technical hiring teams and security leadership.
+          </p>
+          <a class="btn-primary" href="#" style="margin-top:0.5rem;font-size:13px;padding:12px 24px;">
+            ↓ Download Full CV
+          </a>
+        </div>
+
+      </div>
+
+      <div style="margin-top:3rem;padding:1.5rem;background:var(--bg-card);border:1px solid var(--border);border-left:2px solid var(--green);border-radius:4px;">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--green);margin-bottom:0.5rem;letter-spacing:0.06em;">// AVAILABILITY STATUS</div>
+        <div style="font-family:var(--mono);font-size:13px;color:var(--text-secondary);">
+          Open to: <span style="color:var(--text-primary)">Security Research Collaborations</span> · <span style="color:var(--text-primary)">Blockchain Security Consulting</span> · <span style="color:var(--text-primary)">Purple Team Engagements</span> · <span style="color:var(--text-primary)">AI Security R&amp;D</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    
+    const target = document.getElementById(id);
+    if (target) target.classList.add('active');
+
+    const sectionMap = {
+      home: 0, about: 1, timeline: 2, certs: 3,
+      projects: 4, thm: 5, blogs: 6, contact: 7
+    };
+    
+    const navItems = document.querySelectorAll('.nav-item');
+    const idx = sectionMap[id];
+    if (navItems[idx]) navItems[idx].classList.add('active');
+    
+    window.scrollTo(0, 0);
+    return false;
+  }
+
+  document.querySelectorAll('.nav-item').forEach((item, i) => {
+    item.addEventListener('click', function(e) { e.preventDefault(); });
+  });
+</script>
+</body>
+</html>
